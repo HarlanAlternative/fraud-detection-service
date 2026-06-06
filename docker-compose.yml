@@ -1,0 +1,112 @@
+# Full local stack: scoring API + Postgres + MLflow + Prometheus + Grafana.
+# (Kafka for the streaming path lives in docker-compose.streaming.yml — compose it in with
+#  `docker compose -f docker-compose.yml -f docker-compose.streaming.yml up`.)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fraud
+      POSTGRES_PASSWORD: fraud
+      POSTGRES_DB: fraud
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fraud"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.2
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0 --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow:/mlflow
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/health',timeout=2).status<500 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  scoring-api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FRAUD_DATABASE_URL: postgresql+psycopg://fraud:fraud@postgres:5432/fraud
+      FRAUD_MLFLOW_TRACKING_URI: http://mlflow:5000
+    ports:
+      # host port configurable (default 8000) to avoid clashes with other local services
+      - "${SCORING_API_PORT:-8000}:8000"
+    volumes:
+      - ./models:/app/models:ro   # trained model is mounted in (train on host first)
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  drift-monitor:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    command: ["python", "-m", "fraud.monitoring.exporter", "--interval", "30"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FRAUD_DATABASE_URL: postgresql+psycopg://fraud:fraud@postgres:5432/fraud
+    volumes:
+      - ./models:/app/models:ro
+    expose:
+      - "9100"
+    healthcheck:   # exporter serves Prometheus metrics on :9100 (no /health endpoint)
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9100/metrics"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    depends_on:
+      - scoring-api
+      - drift-monitor
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana:/var/lib/grafana
+
+volumes:
+  pgdata:
+  mlflow:
+  grafana:

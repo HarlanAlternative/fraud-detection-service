@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fraud-detection-service"
+version = "0.1.0"
+description = "Production-grade real-time fraud / anomaly detection service (stacked XGBoost + Isolation Forest + Autoencoder ensemble) with SHAP reason codes, drift monitoring, and a FastAPI scoring API."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Harlan Li" }]
+license = { text = "MIT" }
+
+dependencies = [
+    # --- core tabular ML ---
+    "numpy>=1.26,<2.2",
+    "pandas>=2.1",
+    "pyarrow>=15.0",            # fast parquet for the IEEE-CIS tables
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "imbalanced-learn>=0.12",   # SMOTE / undersampling (compared in the benchmark)
+    # --- deep unsupervised signal ---
+    "torch>=2.2",               # dense autoencoder (CPU is fine)
+    # --- explainability ---
+    "shap>=0.45",
+    # --- validation & config ---
+    "pandera>=0.18",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    # --- experiment tracking & registry ---
+    "mlflow>=2.12",
+    # --- serving ---
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "prometheus-client>=0.20",
+    "psycopg[binary]>=3.1",     # inference + backfill logging to Postgres
+    "sqlalchemy>=2.0",
+    # --- data acquisition ---
+    "kaggle>=1.6",
+]
+
+[project.optional-dependencies]
+streaming = [
+    "confluent-kafka>=2.3",     # Kafka consumer/producer for the real-time stream
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "httpx>=0.27",              # FastAPI TestClient
+    "ruff>=0.4",
+    "jupyter>=1.0",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]

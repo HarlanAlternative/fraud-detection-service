@@ -1,0 +1,57 @@
+# --- data (never commit raw datasets) ---
+data/raw/
+data/interim/
+data/processed/
+*.csv
+*.parquet
+*.zip
+!tests/fixtures/*.csv
+
+# --- models & experiment artifacts ---
+models/
+mlruns/
+mlartifacts/
+*.db
+mlflow_registry.db
+*.pkl
+*.joblib
+*.pt
+*.onnx
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- notebooks ---
+.ipynb_checkpoints/
+
+# --- secrets / config ---
+.env
+kaggle.json
+
+# --- editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- AI assistant traces (never commit) ---
+CLAUDE.md
+.claude/
+.cursor/
+.cursorrules
+.aider*
+.continue/
+.github/copilot-instructions.md
+**/cowork*
+.cowork/
+# project brief (assignment spec — not part of the published project)
+Brief_Project_B_Fraud_Detection.md

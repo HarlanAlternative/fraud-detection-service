@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": { "value": "fraud" },
+    "environmentName": { "value": "prod" },
+    "regionCode": { "value": "eaus2" },
+    "acrSku": { "value": "Basic" },
+    "apiContainerImage": { "value": "acrfraudprodeaus2.azurecr.io/fraud-api:latest" },
+    "apiCpu": { "value": 1 },
+    "apiMemory": { "value": "2Gi" },
+    "modelStage": { "value": "Production" }
+  }
+}

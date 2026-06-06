@@ -1,0 +1,43 @@
+groups:
+  - name: fraud-serving
+    rules:
+      - alert: HighScoringLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(fraud_scoring_latency_seconds_bucket[5m])) by (le)) > 0.1
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "Scoring P95 latency above the 100 ms SLA"
+          description: "P95 = {{ $value | humanizeDuration }} over the last 5m."
+
+      - alert: NoTrafficScored
+        expr: sum(increase(fraud_scores_total[10m])) == 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "No transactions scored in the last 10 minutes"
+
+  - name: fraud-drift
+    rules:
+      # These series are emitted by fraud.monitoring.drift (Phase 5).
+      - alert: FeatureDriftPSI
+        expr: max(fraud_feature_psi) > 0.2
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Feature drift: PSI > 0.2"
+          description: "Feature {{ $labels.feature }} PSI = {{ $value }}."
+
+      - alert: PredictionScoreDrift
+        expr: fraud_score_psi > 0.2
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Prediction-score distribution drift: PSI > 0.2"
+
+      - alert: BackfillRecallDrop
+        expr: fraud_backfill_recall < 0.8
+        for: 15m
+        labels: { severity: critical }
+        annotations:
+          summary: "Rolling backfill recall dropped below 0.80"
+          description: "Recall on recently labelled transactions = {{ $value }}."

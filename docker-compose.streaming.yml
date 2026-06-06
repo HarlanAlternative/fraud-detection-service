@@ -1,0 +1,53 @@
+# Streaming overlay — adds a Redpanda broker (Kafka-API compatible, single container) and a
+# consumer that scores the transaction topic. Compose it together with the base stack:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.streaming.yml up
+#
+# Then produce traffic from the host:
+#   python -m streaming.producer --n 2000 --rate 50          # normal
+#   python -m streaming.producer --n 2000 --drift            # drifted -> PSI alerts fire
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.2.4
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  fraud-consumer:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      args:
+        EXTRAS: "[streaming]"
+    command: ["python", "-m", "streaming.consumer"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      FRAUD_KAFKA_BOOTSTRAP: redpanda:29092
+      FRAUD_DATABASE_URL: postgresql+psycopg://fraud:fraud@postgres:5432/fraud
+    volumes:
+      - ./models:/app/models:ro
+    expose:
+      - "8001"
+    healthcheck:   # consumer exposes Prometheus metrics on :8001 (no /health endpoint)
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8001/metrics"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
