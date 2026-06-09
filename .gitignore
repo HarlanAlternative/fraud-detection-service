@@ -8,7 +8,7 @@ data/processed/
 !tests/fixtures/*.csv
 
 # --- models & experiment artifacts ---
-models/
+/models/                 # top-level saved-model artifacts only (NOT src/fraud/models/)
 mlruns/
 mlartifacts/
 *.db
