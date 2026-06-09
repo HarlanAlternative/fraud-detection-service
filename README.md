@@ -157,18 +157,3 @@ Settings are environment variables prefixed `FRAUD_`, loaded by
 | `infra/bicep/` | Azure Container Apps IaC |
 | `notebooks/` | 01 EDA · 02 feature engineering · 03 benchmark · 04 fairness |
 | `tests/` | pytest suite |
-
-## Resume bullets
-
-```
-Real-time Fraud Detection Service — Production ML System
-XGBoost · Isolation Forest · Autoencoder · SHAP · FastAPI · MLflow · Kafka · Prometheus · Grafana · Azure
-
-· Built a stacked ensemble (XGBoost + Isolation Forest + Autoencoder, LR meta-learner) for
-  card-fraud scoring on the IEEE-CIS dataset, optimising recall at a 2% false-positive budget.
-· Production scoring service: FastAPI REST + Kafka streaming at P95 < 100ms, with structured
-  JSON contracts and SHAP-based top-3 reason codes for regulator-friendly explainability.
-· MLOps: PSI feature/score-drift detection, label-backfill recall monitoring, two-threshold
-  decision policy, MLflow model registry with champion/challenger promotion, and a
-  Prometheus + Grafana dashboard with automated drift alerting; deployable to Azure Container Apps.
-```
