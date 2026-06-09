@@ -1,13 +1,38 @@
-# Real-time Fraud Detection Service
+<h1 align="center">Real-time Fraud Detection Service</h1>
 
-Production-grade tabular ML service that scores card transactions for fraud in real time.
-A **stacked ensemble** — XGBoost + Isolation Forest + Autoencoder with a logistic-regression
-meta-learner — is served behind a FastAPI API that returns a fraud score, an
-approve/review/decline decision, and **SHAP-based top-3 reason codes** for every transaction.
-Ships with drift monitoring, an MLflow model registry, a Kafka streaming path, and Azure IaC.
+<p align="center">
+  <b>Scores card transactions for fraud in real time</b> — a stacked
+  XGBoost&nbsp;+&nbsp;Isolation&nbsp;Forest&nbsp;+&nbsp;Autoencoder ensemble served behind a
+  FastAPI API, with SHAP reason codes, drift monitoring, and end-to-end MLOps.
+</p>
 
-> Trained on public benchmark data (IEEE-CIS, Kaggle Credit Card Fraud); production decision
-> thresholds are calibrated against industry false-positive-rate targets. Not a deployed bank system.
+<p align="center">
+  Python 3.11 · FastAPI · XGBoost · PyTorch · scikit-learn · SHAP · MLflow · Kafka · Docker · Prometheus · Grafana · Azure
+</p>
+
+---
+
+Every request returns a fraud score, an **approve / review / decline** decision, and
+**SHAP-based top-3 reason codes** — so each call is explainable, not just a number.
+Trained and benchmarked on public data (IEEE-CIS, Kaggle Credit Card Fraud); decision
+thresholds are calibrated against industry false-positive-rate targets.
+
+> Research / portfolio project — not a deployed bank system.
+
+## Highlights
+
+- **Stacked ensemble** — XGBoost + Isolation Forest + Autoencoder, combined by a
+  logistic-regression meta-learner; thresholds tuned for **recall ≈ 0.90 at FPR < 2%**.
+- **Explainable by default** — SHAP top-3 reason codes on every decision, for
+  regulator-friendly auditability instead of a black-box score.
+- **Real-time at two speeds** — a synchronous FastAPI `/score` endpoint and an async
+  Kafka (Redpanda) consumer, both scoring with the exact same model.
+- **MLOps, not just a model** — MLflow registry with champion/challenger promotion,
+  PSI feature/score-drift detection, label-backfill recall monitoring, and Prometheus +
+  Grafana dashboards with automated alerting.
+- **Runs fully offline** — a synthetic IEEE-CIS-shaped data generator means every
+  notebook, test, and demo works with zero data downloads.
+- **Ship-ready** — Dockerised stack plus Azure Container Apps IaC (Bicep), with green CI.
 
 ## Why three models
 
