@@ -101,6 +101,35 @@ curl -s localhost:8000/score -H 'content-type: application/json' -d '{
 #      "top_3_reasons": [ {"feature":"transaction_amt", ...}, ... ], "model_version": "..." }
 ```
 
+## API
+
+The model is loaded once at startup (FastAPI `lifespan`); interactive docs live at `/docs`.
+
+| Method & path | Purpose |
+|---|---|
+| `POST /score` | score one transaction → fraud score, decision, top-3 reasons, model version |
+| `POST /score_batch` | score a list of transactions in a single call |
+| `POST /backfill?transaction_id=…&label=0\|1` | attach a late-arriving ground-truth label so drift/recall monitoring can compare against real outcomes |
+| `GET /health` | liveness probe — `status`, `model_loaded`, served `model_version` |
+| `GET /metrics` | Prometheus exposition: decision mix, request counts, scoring-latency histogram, score distribution, model-loaded gauge |
+
+Only `transaction_amt` is required — every other field is optional (a brand-new card has no
+history) and the model imputes what is missing. Requests are validated against a pandera
+schema: a malformed body returns `422`, and scoring before any model is trained returns `503`.
+
+## Configuration
+
+Settings are environment variables prefixed `FRAUD_`, loaded by
+[src/fraud/config.py](src/fraud/config.py) via pydantic-settings — copy `.env.example` to
+`.env` and adjust. The ones that shape decisions:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `FRAUD_TARGET_RECALL` | `0.90` | recall the threshold tuner targets on the holdout split |
+| `FRAUD_MAX_FPR` | `0.02` | false-positive-rate budget the decision threshold must respect |
+| `FRAUD_REVIEW_BAND` | `0.15` | scores within ± this of the threshold are routed to **review** rather than auto-decided |
+| `FRAUD_MODEL_STAGE` | `Production` | which MLflow registry stage the API serves |
+
 ## Things you can run
 
 | Command | What it does |
